@@ -7,18 +7,18 @@
 
 #include "stm32f0xx.h"
 #include "BatteryMeasure.h"
+#include <stdlib.h>
 
 // ----------------------------------------------------------------------------
 // Function prototypes
 // ----------------------------------------------------------------------------
 void  ADCInit(void);
 int CalculatePercentage(uint16_t iADCValue, float iDefineFullBattery, float iDefineZeroBattery);
-int getPercentage(float iDefineFullBattery, float iDefineZeroBattery, BatteryMeasure *batterymeasure);
-void Delay(const int d);
+void DelayBM(const int d);
 // ----------------------------------------------------------------------------
 // Get percentage
 // ----------------------------------------------------------------------------
-int getPercentage(float iDefineFullBattery, float iDefineZeroBattery, BatteryMeasure *batterymeasure)
+int getPercentage(float iDefineFullBattery, float iDefineZeroBattery)
 {
 	uint16_t iValueOfADC;
 	
@@ -31,8 +31,8 @@ int getPercentage(float iDefineFullBattery, float iDefineZeroBattery, BatteryMea
   // Start the first conversion
   ADC_StartOfConversion(ADC1);
 
-	// Delay ~0.1 sec.
-	Delay(SystemCoreClock/8/10);
+	// Delay ~0.2 sec.
+	DelayBM(SystemCoreClock/8/5);
 	
 	// Get the conversion result
 	iValueOfADC = ADC_GetConversionValue(ADC1);
@@ -117,13 +117,16 @@ int CalculatePercentage(uint16_t iADCValue, float iDefineFullBattery, float iDef
 	if(iPercentageOfBattery >= 100){
 		iPercentageOfBattery = 100;
 	}
+	
+	
+	
 	return iPercentageOfBattery;
 }
 
 // ----------------------------------------------------------------------------
 // Simple delay function
 // ----------------------------------------------------------------------------
-void Delay(const int d)
+void DelayBM(const int d)
 {
   volatile int i;
 
@@ -135,14 +138,12 @@ void Delay(const int d)
 // ----------------------------------------------------------------------------
 // BatteryMeasure constructor, with parameters: iDefineFullBattery(max voltage the battery delivers) and iDefineZeroBattery(min voltage the microcontrollers still operates).
 // ----------------------------------------------------------------------------
-BatteryMeasure *new_BatteryMeasure(float iDefineFullBattery, float iDefineZeroBattery){
+SimpleBatteryMeasure *new_SimpleBatteryMeasure(float iDefineFullBattery, float iDefineZeroBattery){
 	
-		BatteryMeasure *batterymeasure = (BatteryMeasure *)malloc(sizeof(BatteryMeasure));
-		batterymeasure->ADCInit = ADCInit;
-		batterymeasure->CalculatePercentage = CalculatePercentage;
-		batterymeasure->getPercentage = getPercentage;
-		batterymeasure->Delay = Delay;
-	  
+		SimpleBatteryMeasure *batteryMeasurePercentage = (SimpleBatteryMeasure *)malloc(sizeof(SimpleBatteryMeasure));
+		batteryMeasurePercentage->ADCInit = ADCInit;
+		batteryMeasurePercentage->CalculatePercentage = CalculatePercentage;
+		batteryMeasurePercentage->getPercentage = getPercentage;	  
 	
-		return batterymeasure;
+		return batteryMeasurePercentage;
 }

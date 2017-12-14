@@ -19,21 +19,18 @@
 /******************************************************************************
   Structs
 ******************************************************************************/
-typedef struct BatteryMeasure{
-	//attributes
-	volatile int usartperiphid;
+typedef struct SimpleBatteryMeasure{
 	
 	//methods
 	void(*ADCInit)(void);
 	int(*CalculatePercentage)(uint16_t, float, float);
-	int(*getPercentage)(float, float, struct BatteryMeasure *);
-	void(*Delay)(const int);
-}  BatteryMeasure;
+	int(*getPercentage)(float, float);
+}  SimpleBatteryMeasure;
 
 
 
 /******************************************************************************
   Function prototypes
 ******************************************************************************/
-BatteryMeasure * new_BatteryMeasure(float iDefineFullBattery, float iDefineZeroBattery);
-#endif // _BATTERYMEASURE_
+SimpleBatteryMeasure * new_SimpleBatteryMeasure(float iDefineFullBattery, float iDefineZeroBattery);
+#endif // _BATTERYMEASURE_H_
