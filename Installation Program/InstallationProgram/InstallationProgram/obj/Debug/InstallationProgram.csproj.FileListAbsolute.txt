@@ -1,0 +1,9 @@
+c:\users\willem\documents\visual studio 2017\Projects\InstallationProgram\InstallationProgram\bin\Debug\InstallationProgram.exe.config
+c:\users\willem\documents\visual studio 2017\Projects\InstallationProgram\InstallationProgram\bin\Debug\InstallationProgram.exe
+c:\users\willem\documents\visual studio 2017\Projects\InstallationProgram\InstallationProgram\bin\Debug\InstallationProgram.pdb
+c:\users\willem\documents\visual studio 2017\Projects\InstallationProgram\InstallationProgram\obj\Debug\InstallationProgram.csprojResolveAssemblyReference.cache
+c:\users\willem\documents\visual studio 2017\Projects\InstallationProgram\InstallationProgram\obj\Debug\InstallationProgram.Form1.resources
+c:\users\willem\documents\visual studio 2017\Projects\InstallationProgram\InstallationProgram\obj\Debug\InstallationProgram.Properties.Resources.resources
+c:\users\willem\documents\visual studio 2017\Projects\InstallationProgram\InstallationProgram\obj\Debug\InstallationProgram.csproj.GenerateResource.Cache
+c:\users\willem\documents\visual studio 2017\Projects\InstallationProgram\InstallationProgram\obj\Debug\InstallationProgram.exe
+c:\users\willem\documents\visual studio 2017\Projects\InstallationProgram\InstallationProgram\obj\Debug\InstallationProgram.pdb
