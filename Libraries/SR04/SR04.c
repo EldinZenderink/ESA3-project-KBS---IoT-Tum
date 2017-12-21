@@ -28,7 +28,7 @@
 // ----------------------------------------------------------------------------
 #define SR04_TRIG   (1<<6) //PIN PA 6
 #define SR04_ECHO   (1<<7) //PIN PA 7
-#define SR04_OFFSET -2.0
+#define SR04_OFFSET  0.0
 
 // ----------------------------------------------------------------------------
 // Global variables
@@ -69,13 +69,13 @@ static void TIM2_Init(void) {
  */
 static float SR04read(void) {
   TIM_SetCounter(TIM2, 0);
-  GPIO_SetBits(GPIOA, GPIO_Pin_6);
+  GPIO_SetBits(GPIOA, GPIO_Pin_6); //sets trigger
   while(TIM_GetCounter(TIM2) < 10);
-  GPIO_ResetBits(GPIOA, GPIO_Pin_6);
+  GPIO_ResetBits(GPIOA, GPIO_Pin_6); //reset trigger
   TIM_SetCounter(TIM2, 0);
-  while(!GPIO_ReadInputDataBit(GPIOA, GPIO_Pin_7));// & (TIM_GetCounter(TIM2) < 50000));
-  TIM_SetCounter(TIM2, 0);
-  while(GPIO_ReadInputDataBit(GPIOA, GPIO_Pin_7));// & (TIM_GetCounter(TIM2) < 50000));
+  while(!GPIO_ReadInputDataBit(GPIOA, GPIO_Pin_7)); // waits till pin 7 is false then resets trigger
+  TIM_SetCounter(TIM2, 0);													// timer runs till
+  while(GPIO_ReadInputDataBit(GPIOA, GPIO_Pin_7));  // pin 7 is true, then the time it took is retuned
   return ((float)TIM_GetCounter(TIM2) * 0.01715 + SR04_OFFSET);
 }
 
@@ -103,7 +103,6 @@ static uint16_t SR04check(uint8_t iDistance, uint8_t iCycles){
 	double dSum =0;
 	
 	//function body
-	
 	// reads sensor
 	for(i=0; i < iCycles; i++){
 		dSum= dSum + (double)SR04read();
@@ -121,29 +120,43 @@ static uint16_t SR04check(uint8_t iDistance, uint8_t iCycles){
 	
 }
 
-// registers toilet use
-static uint8_t SR04register(uint8_t iDistance){
+// registers toilet/sanitair use
+static uint8_t SR04register(uint8_t iDistance, uint8_t iMode){
 	//local variables
 	uint8_t i =0;
 	uint8_t iReturn =0;
 	
 	//function body
-	for(i=0;i<10;i++){
-		if(!SR04check(iDistance+20, 10)){
-			iReturn++;
-			//when sr04 check is false more than 3 times it doesnt register the use
-			if(iReturn >3){
-				return 0;
+	if(iMode==1){ // mode 1 == register toilet use
+		for(i=0;i<10;i++){
+			if(!SR04check(iDistance+20, 10)){
+				iReturn++;
+				//when sr04 check is false more than 3 times it doesnt register the use
+				if(iReturn >3){
+					return 0;
+				}
 			}
 		}
-	}
-	//keeps doing nothing while check is idistance+20
-	while(SR04check(iDistance +20, 15)){
-	 //do nothing
-	}
 		
-	return 1;
-	
+		while(SR04check(iDistance +20, 15)){//keeps doing nothing while sensor read is below idistance+20
+		 //do nothing
+		}	
+		return 1;
+	}
+	else if(iMode==2){ // mode 2 == register sanitair use
+		if(SR04check(120 ,4) ){
+			while(SR04check(120 ,5)){ // while sensor read is < distance  wait till its not
+			 delay_ms(100);
+			}
+			return 1;
+		}
+		else{
+			return 0;
+		}
+	}
+	else{
+		return 0;
+	}
 }
 
 

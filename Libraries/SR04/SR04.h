@@ -29,7 +29,7 @@ typedef struct sensSR04{
 	void(*SR04_timinit)(void);
 	float(*SR04_read)(void);
 	uint8_t(*SR04_check)(uint8_t, uint8_t);
-	uint8_t(*SR04_reg)(uint8_t);
+	uint8_t(*SR04_reg)(uint8_t, uint8_t);
 }  sensSR04;
 
 
