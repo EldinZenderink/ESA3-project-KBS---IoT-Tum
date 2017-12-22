@@ -295,7 +295,7 @@ static uint8_t Ble_Send_Ack(BleCon * con){
 	con->com->USART_putstr("  ACK", con->com);
 }
 
-static char* Ble_Receive_Ack(BleCon * con){
+static char* Ble_Receive_For_Ack(BleCon * con){
 	con->com->USART_getstr(con->receivebuffer, 1000, con->com);
 	
 	

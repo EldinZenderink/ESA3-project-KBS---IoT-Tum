@@ -36,7 +36,7 @@ typedef struct BleCon{
 	char* commandbuffer;
 	char mode;
 	uint8_t pinpower;
-	uint8_t pinprogram;
+	uint8_t pinprogram;d
 	uint16_t timeout;
 	GPIO_TypeDef *gpio;
 	SimpleUSART *com;
@@ -65,7 +65,7 @@ typedef struct BleCon{
 	uint8_t(*Ble_SetTimeout)(uint16_t, struct BleCon *);
 	uint8_t(*Ble_Check_Ack)(struct BleCon *);
 	uint8_t(*Ble_Send_Ack)(struct BleCon *);
-	char*(*Ble_Receive_Ack)(struct BleCon *);
+	char*(*Ble_Receive_For_Ack)(struct BleCon *);
 	uint8_t(*Ble_Send_For_Ack)(char*, struct BleCon *);	
 	void (*Ble_FreeDevices)(struct BleCon *);
 }  BleCon;

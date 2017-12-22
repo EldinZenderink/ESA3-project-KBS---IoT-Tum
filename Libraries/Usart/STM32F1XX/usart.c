@@ -8,6 +8,8 @@
 
 #include "stm32f10x.h" 
 #include "usart.h"
+#include "delay.h"
+#include "memman.h"
 #include <stdlib.h>
 
 // ----------------------------------------------------------------------------
@@ -36,7 +38,8 @@ static void USARTinit(SimpleUSART *susart)
 	switch(susart->usartperiphid){
 		case 1:
 				//allocate memory for fifobuffer usart1
-	      cFifoBuffer1 = (char *)malloc(iSizeOfBuffer1 * sizeof *cFifoBuffer1);
+	      //cFifoBuffer1 = (char *)malloc(iSizeOfBuffer1 * sizeof *cFifoBuffer1);
+				cFifoBuffer1 = (char*)MemMan_GetFreeBlock(susart->bufsize);
 		
 			  // GPIOA Periph clock enable		
 			  RCC->APB2ENR |= RCC_APB2ENR_IOPAEN; 
@@ -72,7 +75,8 @@ static void USARTinit(SimpleUSART *susart)
 				break;
 		case 2: 
 				//allocate memory for fifo buffer usart2
-			  cFifoBuffer2 = (char *)malloc(iSizeOfBuffer2 * sizeof *cFifoBuffer2);
+			  //cFifoBuffer2 = (char *)malloc(iSizeOfBuffer2 * sizeof *cFifoBuffer2);
+				cFifoBuffer2 = (char*)MemMan_GetFreeBlock(susart->bufsize);
 				
 		  // GPIOA Periph clock enable		
 			  RCC->APB2ENR |= RCC_APB2ENR_IOPAEN; 
@@ -107,7 +111,8 @@ static void USARTinit(SimpleUSART *susart)
 				break;
 		default:   			
 				//allocate memory for fifobuffer usart1
-				cFifoBuffer1 = (char *)malloc(iSizeOfBuffer1 * sizeof *cFifoBuffer1);
+				//cFifoBuffer1 = (char *)malloc(iSizeOfBuffer1 * sizeof *cFifoBuffer1);
+				cFifoBuffer1 = (char*)MemMan_GetFreeBlock(susart->bufsize);
 			  // GPIOA Periph clock enable		
 			  RCC->APB2ENR |= RCC_APB2ENR_IOPAEN; 
 				
@@ -254,60 +259,43 @@ static char USARTgetc(SimpleUSART *susart)
 /*
 * Get string using USARTgetc
 */
-static char* USARTgetstr(char * buffer, SimpleUSART *susart){	
-		int i = 0;
+static char* USARTgetstr(char * buffer, uint32_t timeout, SimpleUSART *susart){	
+		uint32_t i = 0;
+		uint32_t b = 0;
 		char r;
-		int maxiterations = iSizeOfBuffer1;
-		switch(susart->usartperiphid){
-			case 1:
-				maxiterations = iSizeOfBuffer1;
-				break;
-			case 2:
-				maxiterations = iSizeOfBuffer2;
-				break;
-			default:
-				maxiterations = iSizeOfBuffer1;
-				break;
-		}
-		while((r = susart->USART_getc(susart)) != '\0' && i < maxiterations){			
-			 buffer[i] = r;
-			 i++;
-		}
-		if(i == 0){
-			buffer = "EMPTY";
-		} else {			
-			buffer[i] = '\0';
-		}
+		int maxiterations = susart->bufsize;	
+		while((r = susart->USART_getc(susart)) != '\n' && i < maxiterations){	
+			 if(r != NULL){				 
+				 buffer[i] = r;
+				 i++;
+			 } 
+			 
+			 if(b > timeout){
+				 break;
+			 }
+			 b++;
+			 delay_ms(1);
+			 
+		}	
+		buffer[i] = '\0';
 		return buffer;
-}
-
-/*
-* Send clear screen command to USART peripheral depending on which one is selected
-*/
-static void USARTclearscreen(SimpleUSART *susart)
-{
-		char cmd1[5] = {0x1B, '[', '2', 'J', '\0'}; // Clear screen
-		char cmd2[4] = {0x1B, '[', 'f', '\0'}; // Cursor home
-		
-		susart->USART_putstr(cmd1, susart);
-		susart->USART_putstr(cmd2, susart);
 }
 
 /*
 * USART Constructor, wiht parameters: iBufsize (fifo buffersize for both usart peripherals), iType (which USART peripheral needs to be used)
 */
 SimpleUSART *new_SimpleUSART(int iBufsize, int iType){
-	
+		delay_init();
 		SimpleUSART *susart = (SimpleUSART *)malloc(sizeof(SimpleUSART));
 		iSizeOfBuffer1 = iBufsize;
 		iSizeOfBuffer2 = iBufsize;
 		susart->usartperiphid = iType;
-		susart->USART_clearscreen = USARTclearscreen;
 		susart->USART_getc = USARTgetc;
 		susart->USART_getstr = USARTgetstr;
 		susart->USART_putc = USARTputc;
 	  susart->USART_putstr = USARTputstr;
 		susart->USART_init = USARTinit;
+		susart->bufsize = iBufsize;
 	
 		return susart;
 }

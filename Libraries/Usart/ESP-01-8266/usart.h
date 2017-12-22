@@ -11,7 +11,9 @@
 #ifndef _USART_H_
 #define _USART_H_
 
-#include "stdint.h"
+#include <Arduino.h>
+#include <stdint.h>
+#include <stdlib.h>
 
 /******************************************************************************
   Defines
@@ -23,8 +25,6 @@
 ******************************************************************************/
 typedef struct SimpleUSART{
 	//attributes
-	volatile int usartperiphid;
-	uint8_t bufsize;
 	
 	//methods
 	void(*USART_init)(struct SimpleUSART *);
@@ -39,5 +39,5 @@ typedef struct SimpleUSART{
 /******************************************************************************
   Function prototypes
 ******************************************************************************/
-SimpleUSART * new_SimpleUSART(int iBufsize, int iType);
+SimpleUSART * new_SimpleUSART();
 #endif // _USART_H_
