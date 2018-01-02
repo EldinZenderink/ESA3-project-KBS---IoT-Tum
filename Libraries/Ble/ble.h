@@ -34,12 +34,21 @@ typedef struct BleCon{
 	char cEnergyMode;
 	char* receivebuffer;
 	char* commandbuffer;
+	char mode;
 	uint8_t pinpower;
 	uint8_t pinprogram;
 	uint16_t timeout;
 	GPIO_TypeDef *gpio;
 	SimpleUSART *com;
 	SimpleUSART *passthrough;
+	uint8_t AckReceived;
+	uint32_t firstAddress;
+	uint8_t numberOfDevices;
+	Devices *devices;
+	uint8_t iAckSendSwitch;
+	uint8_t iAckReceiveSwitch;
+	
+	
 	
 	//methods
 	uint8_t(*Ble_Init)(struct BleCon *);
@@ -53,13 +62,10 @@ typedef struct BleCon{
 	Devices*(*Ble_ScanSlaves)(struct BleCon *);
 	char*(*Ble_GetSlave)( uint8_t index, struct BleCon *);
 	uint8_t(*Ble_ConnectSlave)(char*, struct BleCon *);	
-	uint8_t(*Ble_Send)(char*, struct BleCon *);
-	char*(*Ble_Receive)(struct BleCon *);
-	uint8_t(*Ble_SetTimeout)(uint16_t, struct BleCon *);
-	uint8_t(*Ble_Check_Ack)(struct BleCon *);
-	uint8_t(*Ble_Send_Ack)(struct BleCon *);
-	char*(*Ble_Receive_Ack)(struct BleCon *);
-	uint8_t(*Ble_Send_For_Ack)(char*, struct BleCon *);	
+	uint8_t(*Ble_Send)(char*, uint8_t, struct BleCon *);
+	char*(*Ble_Receive)(uint8_t, struct BleCon *);
+	uint8_t(*Ble_SetTimeout)(uint16_t, struct BleCon *);	
+	void (*Ble_FreeDevices)(struct BleCon *);
 }  BleCon;
 
 
