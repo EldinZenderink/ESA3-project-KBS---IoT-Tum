@@ -257,8 +257,33 @@ static uint8_t Ble_Send(char *str, uint8_t needAck, BleCon *con) {
 	//con->com->USART_putstr(str, con->com);
 	con->iAckSendSwitch = 0;
 	uint16_t count = 0;
-	while(1){
-		if(strstr(con->Ble_Receive(con), "  ACK") != NULL){
+
+	while (1) {
+		switch (con->iAckSendSwitch) {
+		case 0:
+			count = 0;
+			con->com->USART_putstr(str, con->com);
+			if (needAck) {
+				con->iAckSendSwitch = 1;
+			}
+			else {
+				con->iAckSendSwitch = 10;
+			}
+			break;
+		case 1:
+
+			if (strstr(con->Ble_Receive(0, con), "ACK") != NULL) {
+				return 1;
+			}
+			else if (count > (con->timeout / 5)) {
+				con->passthrough->USART_putstr("No ACK received!", con->passthrough);
+				con->iAckSendSwitch = 0;
+			}
+
+			delay_ms(100);
+			count++;
+			break;
+		case 10:
 			return 1;
 		default:
 			con->iAckSendSwitch = 0;
