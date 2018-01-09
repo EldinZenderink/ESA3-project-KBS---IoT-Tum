@@ -11,6 +11,7 @@
 #include "stm32f10x_adc.h"
 #include "delay.h"
 
+
 // ----------------------------------------------------------------------------
 // Function prototypes
 // ----------------------------------------------------------------------------
@@ -22,71 +23,74 @@ int CalculatePercentage(uint16_t iADCValue, float iDefineFullBattery, float iDef
 // ----------------------------------------------------------------------------
 int getPercentage(float iDefineFullBattery, float iDefineZeroBattery)
 {
-	uint16_t iValueOfADC;
+    GPIOA->ODR ^= 0x0002;
+		GPIOA->CRL ^= (GPIO_CRL_MODE0_1 | GPIO_CRL_MODE0_0);
+		GPIOA->CRL ^= GPIO_CRL_CNF0_0;
+    uint16_t iValueOfADC;
+    uint8_t iPercentageOfBattery;
 	
-	// Delay ~0.2 sec.
-	delay_init();
-	delay_ms(200);
+		//testing delay
+		delay_ms(2000);
 	
-	// Get the conversion result
-	iValueOfADC = ADC_GetConversionValue(ADC1);
-	
-	return CalculatePercentage(iValueOfADC, iDefineFullBattery, iDefineZeroBattery);
+		
+    // Get the conversion result
+    iValueOfADC = ADC1->DR;
+
+    iPercentageOfBattery = CalculatePercentage(iValueOfADC, iDefineFullBattery, iDefineZeroBattery);
+		GPIOA->CRL |= (GPIO_CRL_MODE0_1 | GPIO_CRL_MODE0_0);
+    GPIOA->ODR |= 0x0002;
+    return iPercentageOfBattery;
 }
 
 /**
-  * @brief  This function sets PC1 to analog mode, initializes and
+  * @brief  This function sets PA0 to analog mode, initializes and
   *         calibrates ADC1.
   * @param  None
   * @retval None
   */
 void ADCInit(void)
 {
-  GPIO_InitTypeDef GPIO_InitStructure;
-  ADC_InitTypeDef  ADC_InitStructure;
-	
-	RCC_ADCCLKConfig(RCC_PCLK2_Div6);
- 
+  
   //(#) Enable the ADC interface clock using 
   //    RCC_APB2PeriphClockCmd(RCC_APB2Periph_ADC1, ENABLE); 
-  RCC_APB2PeriphClockCmd(RCC_APB2Periph_ADC1, ENABLE);
-  ADC_DeInit(ADC1);
-	
-  //(#) ADC pins configuration
-  //   (++) Enable the clock for the ADC GPIOs using the following function:
-  //        RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOx, ENABLE);   
-  //   (++) Configure these ADC pins in analog mode using GPIO_Init();  
-  RCC_AHBPeriphClockCmd(RCC_APB2Periph_GPIOA, ENABLE);
-  GPIO_InitStructure.GPIO_Pin  = GPIO_Pin_0;
-  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AIN;
-  GPIO_Init(GPIOC, &GPIO_InitStructure);
+  //RCC_APB2PeriphClockCmd(RCC_APB2Periph_ADC1, ENABLE);
+  //ADC_DeInit(ADC1);
 	
 	
-	/* ADC1 configuration ------------------------------------------------------*/
-  ADC_InitStructure.ADC_Mode = ADC_Mode_Independent;
-  ADC_InitStructure.ADC_ScanConvMode = ENABLE;
-  ADC_InitStructure.ADC_ContinuousConvMode = ENABLE;
-  ADC_InitStructure.ADC_ExternalTrigConv = ADC_ExternalTrigConv_None;
-  ADC_InitStructure.ADC_DataAlign = ADC_DataAlign_Right;
-  ADC_InitStructure.ADC_NbrOfChannel = 1;
-  ADC_Init(ADC1, &ADC_InitStructure);
-  /* ADC1 regular channels configuration */ 
-  ADC_RegularChannelConfig(ADC1, ADC_Channel_0, 1, ADC_SampleTime_55Cycles5);
-	
-	ADC_Cmd(ADC1, ENABLE);
-	
-	ADC_ResetCalibration(ADC1);
-  /* Check the end of ADC1 reset calibration register */
-  while(ADC_GetResetCalibrationStatus(ADC1));
 
-  /* Start ADC1 calibration */
-  ADC_StartCalibration(ADC1);
-  /* Check the end of ADC1 calibration */
-  while(ADC_GetCalibrationStatus(ADC1));
+	//enable GPIOA clock
+	RCC->APB2ENR |= RCC_APB2ENR_IOPAEN;
 	
-	ADC_SoftwareStartConvCmd(ADC1, ENABLE);
+	//pin A0 on analog input'
+	//first pin A0 has to be open drain output
 	
-	while(ADC_GetFlagStatus(ADC1, ADC_FLAG_EOC) == RESET);
+	GPIOA->CRL ^= GPIO_CRL_CNF0_0;
+	
+	//pin A1 on Open drain output
+	GPIOA->CRL |= (GPIO_CRL_MODE1_1 | GPIO_CRL_MODE1_0);
+
+	
+	RCC->APB2ENR |= RCC_APB2ENR_ADC1EN;
+	ADC1->CR2 |= ADC_CR2_ADON;  // enable analog digital converter 
+	ADC1->CR1 &= ~ADC_CR1_DUALMOD;	//independent mode
+	ADC1->CR2 &= ~ADC_CR2_EXTSEL;		//external trig conv_none
+	ADC1->CR2 &= ~ADC_CR2_EXTTRIG;	//external trig disabled
+	ADC1->CR1 |= ADC_CR1_SCAN;			//scan conv mode
+	ADC1->CR2 |= ADC_CR2_CONT ; // enable Continuous mode 
+	ADC1->CR2 &= ~ADC_CR2_ALIGN; // allign 'right' 
+	ADC1->SQR3 |= ADC_SQR3_SQ1_0;   // select channel 1 for adc 1 
+	ADC1->SQR1 |= ADC_SQR1_L;
+	ADC1->SMPR2 |= ADC_SMPR2_SMP1_0 | ~ADC_SMPR2_SMP1_1 | ADC_SMPR2_SMP1_2;	//set sample time on 55.5 cycles 
+	
+	ADC1->CR2 |= ADC_CR2_RSTCAL; //reset calibration
+	delay_ms(20);
+	ADC1->CR2 |= ADC_CR2_CAL;		//SET calibration
+	delay_ms(20);
+	ADC1->CR2 |= ADC_CR2_SWSTART;
+	
+	//set pin A0 on open drain output
+	GPIOA->CRL |= (GPIO_CRL_MODE0_1 | GPIO_CRL_MODE0_0);
+	
 }
 
 // ----------------------------------------------------------------------------
@@ -131,8 +135,9 @@ int CalculatePercentage(uint16_t iADCValue, float iDefineFullBattery, float iDef
 // BatteryMeasure constructor, with parameters: iDefineFullBattery(max voltage the battery delivers) and iDefineZeroBattery(min voltage the microcontrollers still operates).
 // ----------------------------------------------------------------------------
 SimpleBatteryMeasure *new_SimpleBatteryMeasure(float iDefineFullBattery, float iDefineZeroBattery){
-	
+
 		SimpleBatteryMeasure *batteryMeasurePercentage = (SimpleBatteryMeasure *)malloc(sizeof(SimpleBatteryMeasure));
+	
 		batteryMeasurePercentage->ADCInit = ADCInit;
 		batteryMeasurePercentage->CalculatePercentage = CalculatePercentage;
 		batteryMeasurePercentage->getPercentage = getPercentage;	  
