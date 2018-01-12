@@ -48,17 +48,17 @@ static uint8_t Ble_SetName(char* name, BleCon *con) {
 	generateCommand("AT+NAME", name, con);
 	con->com->USART_putstr(con->commandbuffer, con->com);
 
-	uint16_t count = 0;
+	uint16_t iCount = 0;
 	while (1) {
 		if (strstr(con->Ble_Receive(0, con), "OK") != NULL) {
 			return 1;
 		}
-		else if (count > con->timeout || strstr(con->Ble_Receive(0, con), "RR") != NULL) {
+		else if (iCount > con->timeout || strstr(con->Ble_Receive(0, con), "RR") != NULL) {
 			return 0;
 		}
 
 		delay_ms(100);
-		count++;
+		iCount++;
 	};
 }
 
@@ -88,8 +88,8 @@ static uint8_t Ble_SetMode(char cMode, BleCon *con) {
 		con->com->USART_putstr(con->commandbuffer, con->com);
 		break;
 	}
-	uint16_t count = 0;
-	while (count < (con->timeout / 10)) {
+	uint16_t iCount = 0;
+	while (iCount < (con->timeout / 10)) {
 		char* receive = con->Ble_Receive(0, con);
 		if (strstr(receive, "OK") != NULL) {
 			return 1;
@@ -100,7 +100,7 @@ static uint8_t Ble_SetMode(char cMode, BleCon *con) {
 		}
 
 		delay_ms(10);
-		count++;
+		iCount++;
 	};
 	return 1;
 }
@@ -136,17 +136,17 @@ static uint8_t Ble_SetPass(char* pass, BleCon *con) {
 	generateCommand("AT+PASS", pass, con);
 	con->Ble_Send(con->commandbuffer, 0, con);
 
-	uint16_t count = 0;
+	uint16_t iCount = 0;
 	while (1) {
 		if (strstr(con->Ble_Receive(0, con), "OK") != NULL) {
 			return 1;
 		}
-		else if (count > con->timeout) {
+		else if (iCount > con->timeout) {
 			return 0;
 		}
 
 		delay_ms(100);
-		count++;
+		iCount++;
 	};
 
 }
@@ -157,63 +157,63 @@ static Devices* Ble_ScanSlaves(BleCon *con) {
 
 	generateCommand("AT+SCAN1", "", con);
 	con->com->USART_putstr(con->commandbuffer, con->com);
-	uint16_t count = 0;
-	uint8_t countlines = 0;
+	uint16_t iCount = 0;
+	uint8_t iCountlines = 0;
 
 	while (1) {
 		char* rec = con->Ble_Receive(0, con);
-		char *mac;
+		char *cMac;
 		con->passthrough->USART_putstr("\n", con->passthrough);
 		con->passthrough->USART_putstr(rec, con->passthrough);
 		con->passthrough->USART_putstr("\n", con->passthrough);
 		if (strstr(rec, "DEV") != NULL) {
 
 			Devices *device = malloc(sizeof(Devices));
-			if (count == 0) {
+			if (iCount == 0) {
 				con->firstAddress = MemMan_GetFreeBlock(13);
-				mac = (char*)con->firstAddress;
+				cMac = (char*)con->firstAddress;
 			}
 			else {
-				mac = (char*)MemMan_GetFreeBlock(13);
+				cMac = (char*)MemMan_GetFreeBlock(13);
 			}
 			uint8_t i;
-			uint8_t countcommas = 0;
-			uint8_t startindexdid = 0;
+			uint8_t iCountcommas = 0;
+			uint8_t iStartindexdid = 0;
 			uint8_t endindexdid = 0;
 			for (i = 0; i < strlen(rec); i++) {
 				if (rec[i] == '=') {
-					strncpy(mac, rec + i + 1, 12);
+					strncpy(cMac, rec + i + 1, 12);
 				}
 				if (rec[i] == ',') {
-					countcommas++;
+					iCountcommas++;
 				}
 
-				if (countcommas >= 2) {
-					startindexdid = i + 1;
-					countcommas = 0;
+				if (iCountcommas >= 2) {
+					iStartindexdid = i + 1;
+					iCountcommas = 0;
 				}
 			}
-			mac[12] = '\0';
+			cMac[12] = '\0';
 
 
-			if (i - startindexdid - 1 <= 10) {
-				char *deviceid = (char*)MemMan_GetFreeBlock(10);
-				strncpy(deviceid, rec + startindexdid - 0, i - startindexdid - 1);
-				deviceid[i - startindexdid - 1] = '\0';
+			if (i - iStartindexdid - 1 <= 10) {
+				char *iDeviceid = (char*)MemMan_GetFreeBlock(10);
+				strncpy(iDeviceid, rec + iStartindexdid , i - iStartindexdid - 1);
+				iDeviceid[i - iStartindexdid - 1] = '\0';
 
-				device->deviceid = deviceid;
-				device->mac = mac;
-				device->index = countlines;
+				device->deviceid = iDeviceid;
+				device->mac = cMac;
+				device->index = iCountlines;
 
-				con->devices[countlines] = *device;
-				countlines++;
-				con->numberOfDevices = countlines;
+				con->devices[iCountlines] = *device;
+				iCountlines++;
+				con->numberOfDevices = iCountlines;
 			}
 		}
 		if (strstr(rec, "STOP") != NULL) {
 			return con->devices;
 		}
-	count++;
+	iCount++;
 	};
 	return 0;
 
@@ -225,7 +225,7 @@ static void Ble_FreeDevices(BleCon *con) {
 	for (i = 0; i < con->numberOfDevices + 1; i++) {
 		free(&con->devices[i]);
 	}
-	MemMan_FreeBlock(con->firstAddress, con->numberOfDevices * 23);
+	MemMan_FreeBlock(con->firstAddress, con->numberOfDevices * 23);//23 = length of mac address + max length of name of ble device (allocating happens together so you can be sure that those are together as one memory block (due to how memman.h works)
 
 	return;
 }
@@ -238,17 +238,17 @@ static char* Ble_GetSlave(uint8_t index, BleCon *con) {
 	con->Ble_Send(con->commandbuffer, 0, con);
 
 
-	uint16_t count = 0;
+	uint16_t iCount = 0;
 	while (1) {
 		char* rec = con->Ble_Receive(0, con);
 		if (strstr(rec, "MAC") != NULL) {
 			return rec;
 		}
-		else if (count > con->timeout) {
+		else if (iCount > con->timeout) {
 			return 0;
 		}
 		delay_ms(100);
-		count++;
+		iCount++;
 	};
 }
 
@@ -262,12 +262,12 @@ static uint8_t Ble_ConnectSlave(char *mac, BleCon *con) {
 //send data to the other device, if needAck is true, then it waits for an acknowledgement, if it reaches an timeout, it tries to send it again.
 static uint8_t Ble_Send(char *str, uint8_t needAck, BleCon *con) {
 	con->iAckSendSwitch = 0;
-	uint16_t count = 0;
+	uint16_t iCount = 0;
 
 	while (1) {
 		switch (con->iAckSendSwitch) {
 		case 0:
-			count = 0;
+			iCount = 0;
 			con->com->USART_putstr(str, con->com);
 			if (needAck) {
 				con->iAckSendSwitch = 1;
@@ -280,12 +280,12 @@ static uint8_t Ble_Send(char *str, uint8_t needAck, BleCon *con) {
 			if (strstr(con->Ble_Receive(0, con), "ACK") != NULL) {
 				return 1;
 			}
-			else if (count > (con->timeout / 5)) {
+			else if (iCount > (con->timeout / 5)) {
 				con->passthrough->USART_putstr("No ACK received!", con->passthrough);
 				con->iAckSendSwitch = 0;
 			}
 			delay_ms(100);
-			count++;
+			iCount++;
 			break;
 		case 10:
 			return 1;
