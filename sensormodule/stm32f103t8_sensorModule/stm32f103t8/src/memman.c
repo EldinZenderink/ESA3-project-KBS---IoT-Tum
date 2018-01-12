@@ -12,7 +12,6 @@
 
 //global variables
 static char bigassbuffer[MEMSIZE];
-static uint32_t lastmemwrite = 0;
 
 //get amount of free memory.
 uint32_t MemMan_GetFreeMemory(){
@@ -49,7 +48,6 @@ uint32_t MemMan_GetFreeBlock(uint32_t size){
 		for(fillstart = (start - size + 1); fillstart < start + 1; fillstart++){
 			bigassbuffer[fillstart] = 3;			 
 		}
-		//lastmemwrite =  start - size + 1;
 		return (uint32_t) &bigassbuffer[start - size + 1];
 }
 
