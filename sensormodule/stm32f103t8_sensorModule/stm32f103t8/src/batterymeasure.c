@@ -136,7 +136,7 @@ int CalculatePercentage(uint16_t iADCValue, float iDefineFullBattery, float iDef
 // configure .h file with .c file
 // ----------------------------------------------------------------------------
 SimpleBatteryMeasure *new_SimpleBatteryMeasure(float iDefineFullBattery, float iDefineZeroBattery){
-		int iPrevValueOfADC = 0;
+		uint16_t iPrevValueOfADC = 0;
 		SimpleBatteryMeasure *batteryMeasurePercentage = (SimpleBatteryMeasure *)malloc(sizeof(SimpleBatteryMeasure));
 		
 		batteryMeasurePercentage->iPrevValueOfADC = iPrevValueOfADC;

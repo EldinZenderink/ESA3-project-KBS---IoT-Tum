@@ -17,7 +17,7 @@
   Structs
 ******************************************************************************/
 typedef struct SimpleBatteryMeasure{
-	int iPrevValueOfADC;
+	uint16_t iPrevValueOfADC;
 	//methods
 	void(*ADCInit)(void);
 	int(*CalculatePercentage)(uint16_t, float, float);
