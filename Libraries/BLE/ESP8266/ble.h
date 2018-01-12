@@ -34,18 +34,17 @@ typedef struct Devices{
 
 typedef struct BleCon{
 	//attributes
+  Devices *devices;
+  SimpleUSART *com; 
 	char* cReceiveBuffer;
 	char* cCommandBuffer;  
   char cMode;
-	uint16_t iTimeOut;
-  uint8_t iAckReceived;
-  uint32_t iFirstAddress;
-  uint8_t iNumberOfDevices;
-  Devices *devices;
-	SimpleUSART *com; 
 	uint8_t iAckSendSwitch;
   uint8_t iAckReceiveSwitch;
-
+  uint8_t iAckReceived;
+  uint8_t iNumberOfDevices;
+  uint16_t iTimeOut;
+  uint32_t iFirstAddress;
  
 	
 	//methods

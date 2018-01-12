@@ -17,7 +17,6 @@
   Global Variables
 ******************************************************************************/
 static char cBigAssBuffer[MEMSIZE];
-static uint32_t iLastMemWrite = 0;
 
 
 /******************************************************************************
@@ -66,7 +65,6 @@ uint32_t MemMan_GetFreeBlock(uint32_t iSize){
 		for(iFillStart = (iStart - iSize + 1); iFillStart < iStart + 1; iFillStart++){
 			cBigAssBuffer[iFillStart] = 3;			 
 		}
-		//iLastMemWrite =  iStart - iSize + 1;
 		return (uint32_t) &cBigAssBuffer[iStart - iSize + 1];
 }
 
