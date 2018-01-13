@@ -147,6 +147,7 @@ int main(void)
 		pcserial->USART_putstr(cString1,pcserial);
 		ret = snprintf(cString1, sizeof cString1, "{ count :%i }\n",iTimCount);
 		pcserial->USART_putstr(cString1,pcserial);
+		iBatteryUsage = simpleBat->getPercentage(5.0,3.8,simpleBat);
 		
 		// when 10 minutes passed and there is at least one use, send the data to the master
 		if(iSendBLE && iUses>0 ){
