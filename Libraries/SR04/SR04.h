@@ -4,10 +4,10 @@
     Purpose: Setting up the HC-SR04 library
 
     @author Willem Fikkert, Michiel van Dalfsen, Eldin Zenderink
-    @version 1.0 12/12/17
+    @version 1.0 
 */
 
-
+#pragma once
 #ifndef _SR04_H_
 #define _SR04_H_
 

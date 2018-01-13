@@ -24,11 +24,13 @@ static char* cBuildingIdGlobal= "T-Building";
 static char* cFloorIdGlobal= "1";
 
 /* WIFI INFO */
-static char* cSsidGlobal     = "EldinTaBleGlobalt";
+static char* cSsidGlobal     = "EldinTablet";
 static char* cPasswordGlobal = "05200205";
 
+static char* cCurrentDateTime;
+
 /* ENABLE/DISABLE DEBUGGING */
-static uint8_t iEnableDebugging = 0;
+static uint8_t bEnableDebugging = 0;
 
 /******************************************************************************
   Function Prototypes
@@ -38,7 +40,7 @@ static uint8_t iEnableDebugging = 0;
  * Parameter: char pointer to string
  */
 void PrintLineString(char* cToPrint){
-  if(iEnableDebugging){
+  if(bEnableDebugging){
     Serial.println(cToPrint);
   }
 }
@@ -48,7 +50,7 @@ void PrintLineString(char* cToPrint){
  * Parameter: char pointer to string
  */
 void PrintString(char* cToPrint){
-  if(iEnableDebugging){
+  if(bEnableDebugging){
     Serial.print(cToPrint);
   }
 }
@@ -58,7 +60,7 @@ void PrintString(char* cToPrint){
  * Parameter: integer to print
  */
 void PrintLineInt(int iToPrint){
-  if(iEnableDebugging){
+  if(bEnableDebugging){
     Serial.println(iToPrint,DEC);
   }
 }
@@ -68,7 +70,7 @@ void PrintLineInt(int iToPrint){
  * Parameter: integer to print
  */
 void PrintInt(int iToPrint){
-  if(iEnableDebugging){
+  if(bEnableDebugging){
     Serial.print(iToPrint,DEC);
   }
 }
@@ -124,7 +126,7 @@ char* CombineString(char*   cStr1, char*   cStr2)
  * Parameter: 2x char pointer which will be combined 
  */
 void SetupWifi(char* cPassword, char* cSsid){
-    PrintLineString("");;
+    PrintLineString("");
     PrintString("connecting to ");
     PrintLineString(cSsid);  
     
@@ -136,7 +138,6 @@ void SetupWifi(char* cPassword, char* cSsid){
       PrintString(".");
   
       if (iTimeOutCount > 20) {
-        //start wifi connection
         delay(1000);
         PrintLineString("COULD NOT FIND WIFI HOTSPOT, RETRYING:");
         WiFi.begin(cSsidGlobal, cPassword);
@@ -155,42 +156,66 @@ void SetupWifi(char* cPassword, char* cSsid){
 /*
  * Function : Setup the ESP to do the following: 
  *            1. Setup serial.  
- *            2. Connect to wifi. 
- *            3. EnaBleGlobal/DisaBleGlobal debugging in Database Library
- *            4. Get time & cDate.
- *            5. Generate base json. 
- *            6. Insert basejson into database (let database handle if it exists or not)
- *            7. Setup SimpleUsart (UsartGlobal.h) library (only needed for BleGlobal.h)
- *            8. Setup BleCon (BleGlobal.h)
- *            9. Setup BLE Module (JDY-08) through BleCon (BleGlobal.h)
+ *            2. Setup SimpleUsart (Usart.h) library (only needed for Ble.h)
+ *            3. Setup BleCon (Ble.h)
+ *            4. Setup BLE Module (JDY-08) through BleCon (Ble.h)
+ *            5. Connect to wifi. 
+ *            6. Enable/Disable debugging in Database Library
+ *            7. Get time & date.
+ *            8. Generate base json. 
+ *            9. Insert basejson into database (let database handle if it exists or not)
  *            
  * Parameter: 2x char pointer which will be combined 
  */
 void setup() {
+  
   //1. Setup serial.  
   Serial.begin(115200);
+  
+  //2. Setup SimpleUsart (UsartGlobal.h) library (only needed for BleGlobal.h)
+  UsartGlobal = new_SimpleUSART();
+  if (UsartGlobal == NULL) {
+    PrintLineString("UNEXPECTED NULL, RESTARTING");
+    ESP.reset();
+  }
+  UsartGlobal->USART_init(UsartGlobal);
+  
+  //3. Setup BleCon (BleGlobal.h)
+  BleGlobal = new_BleCon(UsartGlobal);
+  if (BleGlobal == NULL) {
+    PrintLineString("UNEXPECTED NULL, RESTARTING");
+    ESP.reset();
+  }
 
-  //2. Setup WIFI
+  //4. Setup BLE Module (JDY-08) through BleCon (BleGlobal.h)
+  BleGlobal->Ble_SetMode('0', BleGlobal);
+  delay(500);
+  BleGlobal->Ble_SetName("TEST", BleGlobal);
+  delay(500);
+  
+
+  //5. Setup WIFI
   SetupWifi(cPasswordGlobal, cSsidGlobal);
 
-  //3. EnaBleGlobal/DisaBleGlobal debugging in Database Library
-  DbGlobal.EnableDebugging(iEnableDebugging);
+  //6. EnaBleGlobal/DisaBleGlobal debugging in Database Library
+  DbGlobal.EnableDebugging(bEnableDebugging);
 
-  //4. Get time & cDate.
-  char* cTimeStamp;
+  //7. Get time & cDate.
   while (1) {
-    cTimeStamp = DbGlobal.GetTimeStamp();
-    if(cTimeStamp== NULL){      
-      FreeChar(cTimeStamp);
+    cCurrentDateTime = DbGlobal.GetTimeStamp();
+    if(cCurrentDateTime== NULL){      
+      FreeChar(cCurrentDateTime);
       PrintLineString("COULD NOT GET DATE, RETRYING");
     } else {
       break;
     }
     delay(1000);
   }
-  char* cDate = strtok(cTimeStamp, " ");  
+  char* cDate = strtok(cCurrentDateTime, " ");  
+  PrintLineString("CURRENT DATE");
+  PrintLineString(cDate);
 
-  //5. Generate base json. 
+  //8. Generate base json. 
   JsonGlobal = new_SimpleJson(800);
 
   JsonGlobal->AddFieldWithString("SanitairID", cMasterIdGlobal, JsonGlobal);
@@ -201,19 +226,18 @@ void setup() {
 
   JsonGlobal->AddFieldWithObject("Sensors", SensorsJsonGlobal, JsonGlobal);
 
-  //6. Insert basejson into database (let database handle if it exists or not)  
+  //9. Insert basejson into database (let database handle if it exists or not)  
   SimpleJson *withDate = new_SimpleJson(600);
     
-  char*  cPart1 = CombineString(cDate, ".");  
+  char*  cPart1 = CombineString(cDate, "."); 
+  char*  cPart2 = CombineString(cPart1, cFullIdGlobal); 
   FreeChar(cPart1);
-  char*  cPart2 = CombineString(cPart1, cFullIdGlobal);
   withDate->AddFieldWithObject(cPart2, JsonGlobal, withDate);
   FreeChar(cPart2);
   
   char* cJsonToSend = withDate->ToString(withDate);
   
   FreeSimpleJson(withDate);
-  
   if (cJsonToSend == NULL) {
     PrintLineString("UNEXPECTED NULL, RESTARTING");
     ESP.reset();
@@ -225,26 +249,9 @@ void setup() {
   }  
   FreeChar(cJsonToSend);
 
-  //7. Setup SimpleUsart (UsartGlobal.h) library (only needed for BleGlobal.h)
-  UsartGlobal = new_SimpleUSART();
-  if (UsartGlobal == NULL) {
-    PrintLineString("UNEXPECTED NULL, RESTARTING");
-    ESP.reset();
-  }
-  UsartGlobal->USART_init(UsartGlobal);
 
-  //7. Setup BleCon (BleGlobal.h)
-  BleGlobal = new_BleCon(UsartGlobal);
-  if (BleGlobal == NULL) {
-    PrintLineString("UNEXPECTED NULL, RESTARTING");
-    ESP.reset();
-  }
-
-  //9. Setup BLE Module (JDY-08) through BleCon (BleGlobal.h)
-  BleGlobal->Ble_SetMode('0', BleGlobal);
-  delay(500);
-  BleGlobal->Ble_SetName("TEST", BleGlobal);
-  delay(500);
+  Serial.println("DONE"); 
+ 
 }
 
 
@@ -274,30 +281,39 @@ void loop() {
         
         //2. Get time & cDate.
         char* cTimeStamp1;
-        while ((cTimeStamp1 = DbGlobal.GetTimeStamp()) == NULL) { //alloc 2
+        while ((cTimeStamp1 = DbGlobal.GetTimeStamp()) == NULL) { 
           delay(1000);
-          FreeChar(cTimeStamp1); //free 1
+          FreeChar(cTimeStamp1); 
           GetHeapMain("3-1");
         }
 
+
         //3. Generate json from received data
         GetHeapMain("3");    
-        SimpleJson *ReceivedSensorJson = parse_SimpleJson(100, cReceived);//alloc 3
+        SimpleJson *ReceivedSensorJson = parse_SimpleJson(100, cReceived);
         GetHeapMain("4");
 
+        //4. Check for new day
+        if(strstr(cTimeStamp1, cCurrentDateTime) != NULL){
+          FreeSimpleJson(SensorsJsonGlobal); 
+          SensorsJsonGlobal = new_SimpleJson(800);
+          JsonGlobal->ReplaceFieldWithObject("Sensors", SensorsJsonGlobal, JsonGlobal);
+          FreeChar(cCurrentDateTime);
+          cCurrentDateTime = cTimeStamp1;
+        }
         
         if(ReceivedSensorJson != NULL){
           
-          char* cId = ReceivedSensorJson->GetFieldWithString("id", ReceivedSensorJson); //alloc 4
+          char* cId = ReceivedSensorJson->GetFieldWithString("id", ReceivedSensorJson); 
           GetHeapMain("5");
           
-          char* cCurrentSensorJson = SensorsJsonGlobal->ToString(SensorsJsonGlobal); //alloc 5
+          char* cCurrentSensorJson = SensorsJsonGlobal->ToString(SensorsJsonGlobal); 
           GetHeapMain("6");
           
           if(strstr(cCurrentSensorJson, cId) == NULL){
             
-            // 4. Insert received data as json into sensorjson
-            ReceivedSensorJson->AddFieldWithString("latestupcDate",cTimeStamp1, ReceivedSensorJson);
+            // 5. Insert received data as json into sensorjson
+            ReceivedSensorJson->AddFieldWithString("latestupdate",cTimeStamp1, ReceivedSensorJson);
             GetHeapMain("6-1");
             
             SensorsJsonGlobal->AddFieldWithObject(cId, ReceivedSensorJson, SensorsJsonGlobal);
@@ -305,7 +321,7 @@ void loop() {
             
           } else{
             
-            //5. Get the already stored sensor data and sum up the uses, then upsert data as json into sensorjson
+            //6. Get the already stored sensor data and sum up the uses, then upsert data as json into sensorjson
             SimpleJson *LocalSensorJson = SensorsJsonGlobal->GetFieldWithObject(cId, SensorsJsonGlobal);//alloc 6
             GetHeapMain("6-1");
             
@@ -323,7 +339,7 @@ void loop() {
                 LocalSensorJson->ReplaceFieldWithInt("us", iNewCurrent, LocalSensorJson);                
                 GetHeapMain("6-5");
                  
-                LocalSensorJson->ReplaceFieldWithString("latestupcDate",cTimeStamp1, LocalSensorJson);                
+                LocalSensorJson->ReplaceFieldWithString("latestupdate",cTimeStamp1, LocalSensorJson);                
                 GetHeapMain("6-6");
                 
                 SensorsJsonGlobal->ReplaceFieldWithObject(cId, LocalSensorJson, SensorsJsonGlobal);                
@@ -331,47 +347,44 @@ void loop() {
               
             } 
             
-            FreeSimpleJson(LocalSensorJson);   //free 1           
+            FreeSimpleJson(LocalSensorJson);              
             GetHeapMain("free 6-1");
             
           }
           
           if(SensorsJsonGlobal != NULL){ 
-              //6. Replace current sensor json in base json with new sensor json                       
+              //7. Replace current sensor json in base json with new sensor json                       
               GetHeapMain("7");
               JsonGlobal->ReplaceFieldWithObject("Sensors", SensorsJsonGlobal, JsonGlobal);
           }  
           
-          //7. Upsert basejson into database (let database handle if it exists or not)
+          //8. Upsert basejson into database (let database handle if it exists or not)
           GetHeapMain("8");
-          SimpleJson *withDate = new_SimpleJson(600);  //alloc 5        
+          SimpleJson *withDate = new_SimpleJson(600);          
           GetHeapMain("9");
           
-          char* cDate1 = strtok(cTimeStamp1, " ");  //alloc ?
+          char* cDate1 = strtok(cTimeStamp1, " ");  
           GetHeapMain("10");  
                
-          char*  cPart1 = CombineString(cDate1, ".");  //alloc 6
+          char*  cPart1 = CombineString(cDate1, ".");  
           GetHeapMain("11");   
-           
-          FreeChar(cTimeStamp1); //free 2
-          GetHeapMain("free 3");  
             
-          char*  cPart2 = CombineString(cPart1, cFullIdGlobal); //alloc 6 
+          char*  cPart2 = CombineString(cPart1, cFullIdGlobal);  
           GetHeapMain("12");    
           
-          FreeChar(cPart1);//free 3      
+          FreeChar(cPart1);      
           GetHeapMain("free 11");    
           
-          withDate->AddFieldWithObject(cPart2, JsonGlobal, withDate); //alloc 6
+          withDate->AddFieldWithObject(cPart2, JsonGlobal, withDate); 
           GetHeapMain("13");
              
-          FreeChar(cPart2); //free 4         
+          FreeChar(cPart2);        
           GetHeapMain("free 12");
             
-          char* cJsonToSend = withDate->ToString(withDate);  //alloc 6  
+          char* cJsonToSend = withDate->ToString(withDate);   
           GetHeapMain("14");
              
-          FreeSimpleJson(withDate); //free 5           
+          FreeSimpleJson(withDate);       
           GetHeapMain("free 9");
                       
           if (cJsonToSend == NULL || withDate == NULL) {
@@ -386,30 +399,30 @@ void loop() {
           }
                  
           GetHeapMain("16");  
-          FreeChar(cJsonToSend);//free 6 
+          FreeChar(cJsonToSend); 
           GetHeapMain("free 14"); 
           
-          FreeChar(cReceived); //free 7 
+          FreeChar(cReceived);  
           GetHeapMain("free 2");
           
-          FreeSimpleJson(ReceivedSensorJson); //free 8
+          FreeSimpleJson(ReceivedSensorJson);
           GetHeapMain("free 4");
           
           FreeChar(cId); //free 9
           GetHeapMain("free 5");
           
-          FreeChar(cCurrentSensorJson); //free10
+          FreeChar(cCurrentSensorJson); 
           GetHeapMain("free 6");
 
         } else {
           PrintLineString("Received sensor data is not json ;(");
           PrintLineString(cReceived);
-          FreeChar(cReceived);//free 1 
+          FreeChar(cReceived);
           GetHeapMain("free 2");
         }
         
     }else{
-        FreeChar(cReceived);//free 1 
+        FreeChar(cReceived);
     }
 }
 

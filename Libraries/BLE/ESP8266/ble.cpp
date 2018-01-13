@@ -288,7 +288,7 @@ static uint8_t Ble_Send(char *str,  uint8_t needAck, BleCon *con){
 }
 
 /*
- * Function : send a string to the ble module
+ * Function : receive a string from the ble module
  * Parameter: 1x uint8_t, 1x BleCon pointer, uint8_t needAck = to wait for cReceiveeiving end to acknowledge receive, BleCon* con = the struct where info resides
  * Returns  : uint8_t with 1 on ack or when no needAck is set always 1 after send. Returns 0 if the received value is larger than the current buffer size of 100 chars;
  * TODO: need a failedtosend check that / iTimeOut / max retries etc.

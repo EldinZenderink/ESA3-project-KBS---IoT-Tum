@@ -817,11 +817,13 @@ SimpleJson *new_SimpleJson(uint16_t iMinSize)
  */
 SimpleJson *parse_SimpleJson( uint16_t iMinSize, char* cJsonString)
 {
+  if(cJsonString == NULL){
+    return NULL;
+  }
   SimpleJson *Json = (SimpleJson*)malloc(sizeof(SimpleJson));
   if(Json == NULL){
     return NULL;
-  }
-  
+  }  
   Json->ToString = ToString;
   Json->AddFieldWithString  = AddFieldWithString;
   Json->AddFieldWithInt   = AddFieldWithInt;

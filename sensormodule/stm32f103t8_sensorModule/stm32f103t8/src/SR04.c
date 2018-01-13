@@ -23,6 +23,9 @@
 #define SR04_OFFSET  0.0
 
 
+volatile float fDistance = 0;
+volatile uint8_t bRised = 0;
+
 // ----------------------------------------------------------------------------
 // Timer 2 init, frequency: ~15Hz.
 // ----------------------------------------------------------------------------
@@ -41,13 +44,37 @@ static void TIM2_Init(void) {
   /* Compute the prescaler value */
   iPrescalerValue = (uint16_t) (SystemCoreClock / 1000000) - 1;
 
-  /* Time base configuration */
+	/* Time base configuration */
   TIM_TimeBaseStructure.TIM_Period = 65535 - 1;      //in uSecs
   TIM_TimeBaseStructure.TIM_Prescaler = iPrescalerValue;
   TIM_TimeBaseStructure.TIM_ClockDivision = 0;
   TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;
   TIM_TimeBaseInit(TIM2, &TIM_TimeBaseStructure);
   TIM_Cmd(TIM2, ENABLE);
+  
+}
+
+/*
+    handles interrupt on pin a7, checks for rising and falling
+		times between rising and falling = distance
+ */
+void EXTI9_5_IRQHandler(void){
+		if( (EXTI->IMR & EXTI_IMR_MR7) && (EXTI->PR & EXTI_PR_PR7))
+		{
+				 
+		  if((GPIOA->IDR & GPIO_Pin_7) && !bRised)
+			{			
+				TIM_SetCounter(TIM2, 0);
+				bRised = 1;
+				fDistance = 0;
+			}
+			
+			if(!(GPIOA->IDR & GPIO_Pin_7) && bRised){
+				bRised = 0;
+				fDistance = (float)TIM_GetCounter(TIM2) * 0.01715 + SR04_OFFSET;
+			}
+			EXTI->PR |= EXTI_PR_PR0;
+		}
 }
 
 /*
@@ -56,15 +83,11 @@ static void TIM2_Init(void) {
 		SRO04_ECHO is connected echo pin 
  */
 static float SR04read(void) {
-  TIM_SetCounter(TIM2, 0);
 	GPIOA->ODR |= 0x00000040; // sets trigger pin to 1
-  while(TIM_GetCounter(TIM2) < 10);
+  delay_us(10);
 	GPIOA->ODR &= ~0x00000040;// sets trigger pin to 0
-  TIM_SetCounter(TIM2, 0);
-  while(!GPIO_ReadInputDataBit(GPIOA, GPIO_Pin_7)); // waits till echo pin is false 
-  TIM_SetCounter(TIM2, 0);													// reset timer
-  while(GPIO_ReadInputDataBit(GPIOA, GPIO_Pin_7));  // waits till pin is true 
-  return ((float)TIM_GetCounter(TIM2) * 0.01715 + SR04_OFFSET); // takes time it took to get an echo and multplies it by 0.01715 which is (1/(speed of sound *2)) for an accurate measurement
+	while(!fDistance){};
+  return fDistance; // takes time it took to get an echo and multplies it by 0.01715 which is (1/(speed of sound *2)) for an accurate measurement
 }
 
 /*
@@ -82,24 +105,40 @@ static void SR04Init(void) {
   // hold TRIG pin low
   GPIO_ResetBits(GPIOA, GPIO_Pin_6);
 	
+	//enable external interrupt on PIN 7
+	EXTI_InitTypeDef EXTI_InitStructure;
+  EXTI_InitStructure.EXTI_Line=EXTI_Line7;    //Label range interrupt line EXTI_Line0~EXTI_Line15
+  EXTI_InitStructure.EXTI_Mode = EXTI_Mode_Interrupt; //Interrupt mode, optional values for the interrupt EXTI_Mode_Interrupt and event EXTI_Mode_Event. 
+  EXTI_InitStructure.EXTI_Trigger = EXTI_Trigger_Rising_Falling; //Trigger mode, can be a falling edge trigger EXTI_Trigger_Falling, the rising edge triggered EXTI_Trigger_Rising, or any level (rising edge and falling edge trigger EXTI_Trigger_Rising_Falling)
+  EXTI_InitStructure.EXTI_LineCmd = ENABLE;
+	EXTI_Init(&EXTI_InitStructure);
+	
+	NVIC_InitTypeDef NVIC_InitStructure;
+  NVIC_InitStructure.NVIC_IRQChannel = EXTI9_5_IRQn; //Enable keypad external interrupt channel
+  NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0x02; //Priority 2, 
+  NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0x02; //Sub priority 2
+  NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE; //Enable external interrupt channel 
+  NVIC_Init(&NVIC_InitStructure);  
+	
+	
 }
 
 // reads sensor iCycle times takes average and checks if this is below input (1=True 0=False)
 static uint8_t SR04check(uint8_t iDistance, uint8_t iCycles){
 	//local variables
 	uint8_t i = 0;
-	double dSum =0;
+	float dSum =0;
 	
 	//function body
 	// reads sensor
 	for(i=0; i < iCycles; i++){
-		dSum= dSum + (double)SR04read();
-		delay_us(500);
+		dSum= dSum + SR04read();
+		delay_ms(10);
 	}
 	//calculates average
-	dSum= dSum/iCycles;
+	dSum = dSum/(float)iCycles;
 
-	if((int)dSum <= iDistance){
+	if((int)dSum <= (float)iDistance){
 		return 1;
 	}
 	else{
@@ -117,7 +156,7 @@ static uint8_t SR04register(uint8_t iDistance, uint8_t iMode){
 	//function body
 	if(iMode==1){ // mode 1 == register toilet use
 		for(i=0;i<10;i++){
-			if(!SR04check(iDistance+20, 10)){
+			if(!SR04check(iDistance+20, 20)){
 				iReturn++;
 				//when sr04 check is false more than 3 times it doesnt register the use
 				if(iReturn >3){
@@ -126,14 +165,14 @@ static uint8_t SR04register(uint8_t iDistance, uint8_t iMode){
 			}
 		}
 		
-		while(SR04check(iDistance +20, 15)){//keeps doing nothing while sensor read is below idistance+20
-		 //do nothing
+		while(SR04check(iDistance +20, 20)){//keeps doing nothing while sensor read is below idistance+20
+		  
 		}	
 		return 1;
 	}
 	else if(iMode==2){ // mode 2 == register sanitair use
-		if(SR04check(iDistance ,4) ){
-			while(SR04check(iDistance ,5)){ // while sensor read is < distance  wait till its not
+		if(SR04check(iDistance ,20) ){
+			while(SR04check(iDistance ,20)){ // while sensor read is < distance  wait till its not
 			 delay_us(500);
 			}
 			return 1;

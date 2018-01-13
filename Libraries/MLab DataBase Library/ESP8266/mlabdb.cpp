@@ -82,8 +82,8 @@ char* CombineStringDB(char*   cStr1, char*   cStr2)
  */
 char* GenerateHttpRequest(uint8_t iHttpRequestType, char* cBaseURL, char* cUrlExtra, char* cBody){
     Http = new HTTPClient();
-    Http->setTimeout(10000);
-    Http->begin(String("Http://") + String(cBaseURL) + String(cUrlExtra)); //HTTPS
+    Http->setTimeout(3000);
+    Http->begin(String("http://") + String(cBaseURL) + String(cUrlExtra)); //HTTPS
     Http->addHeader("X-Requested-With", "ESP8266-TUM");
     int iHttpCode = -1;
     switch(iHttpRequestType){
@@ -91,11 +91,11 @@ char* GenerateHttpRequest(uint8_t iHttpRequestType, char* cBaseURL, char* cUrlEx
         iHttpCode = Http->GET();
         break;
       case 1:        
-        Http->addHeader("Content-Type", "application/cJson");
+        Http->addHeader("Content-Type", "application/json");
         iHttpCode = Http->POST(cBody);
         break;
       case 2:          
-        Http->addHeader("Content-Type", "application/cJson");
+        Http->addHeader("Content-Type", "application/json");
         iHttpCode = (int) Http->PUT(cBody);
         break;
       case 3:
@@ -113,10 +113,10 @@ char* GenerateHttpRequest(uint8_t iHttpRequestType, char* cBaseURL, char* cUrlEx
         }
         // file found at server
         if(iHttpCode == HTTP_CODE_OK) {
-            String sPayload = Http->getString();  
+            String sPayload = Http->getString(); 
             Http->end();
-            char*   cBuf = (char*)malloc(sizeof(char) * sPayload.length() + sizeof(char));
-            if(cBuf == NULL){
+            char*  cBuf = (char*)malloc(sizeof(char) * sPayload.length() + sizeof(char));
+            if(cBuf == NULL){              
               return NULL;
             }
             sPayload.toCharArray(cBuf, sPayload.length() + 1);
@@ -153,6 +153,12 @@ MLABDB::MLABDB(char*   cEndPoint, char*   cKey, char*   cSslFp)
  */
 char* MLABDB::GetTimeStamp(){  
     char* cBuf = GenerateHttpRequest(0, "convert-unix-time.com", "/api?timestamp=now&timezone=amsterdam&format=english12", NULL);  
+    if(bEnableDebug){      
+        Serial.println(cBuf);
+    }
+    if(cBuf == NULL){
+      return NULL;
+    }
     SimpleJson *TimeStampJson = parse_SimpleJson(400,cBuf);
     FreeCharDB(cBuf);
     if (TimeStampJson != NULL) {
@@ -450,6 +456,7 @@ uint8_t  MLABDB::UpsertFieldInDocument(char*  cDataBase, char*  cCollection, cha
     }          
     char* cResponse = GenerateHttpRequest(2, "cors-anywhere.herokuapp.com", cFullUrl, cJsonToSend); 
     FreeCharDB(cJsonToSend);
+
     if(bEnableDebug){      
       Serial.println("The following cJson document has been generated:");
       Serial.println(cJsonToSend);
@@ -458,6 +465,10 @@ uint8_t  MLABDB::UpsertFieldInDocument(char*  cDataBase, char*  cCollection, cha
       Serial.println("response:");
       Serial.println(cResponse);
     } 
+    if(cResponse == NULL){
+      return NULL;
+    }
+  
     FreeCharDB(cResponse);
     return 1;
   
