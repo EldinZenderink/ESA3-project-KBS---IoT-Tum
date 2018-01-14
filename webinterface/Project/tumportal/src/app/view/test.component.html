@@ -1,0 +1,72 @@
+
+<div class="container">
+    <div class="row">
+        <div class="col-sm">
+            <form [formGroup]="SanitairForm" (ngSubmit)="generateSanitairPost(SanitairForm.value)" >
+                <fieldset>
+                    <legend>Sanitair</legend>
+                    <div class="form-group">
+                        <label for="staticSanitairID" class="col-form-label">SanitairID</label>
+                        <input type="text" class="form-control" id="staticSanitairID" formControlName="SanitairID" />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="staticBuildingID" class="col-form-label">BuildingID</label>
+                        <input type="text" class="form-control" id="staticBuildingID" formControlName="BuildingID"/>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="staticFloorID" class="col-form-label">FloorID</label>
+                        <input type="text" class="form-control" id="staticFloorID" formControlName="FloorID"/>
+                    </div>
+                    <div class="form-group ">
+                        <input type="submit" class="btn btn-primary" value="Generate Sanitair" [disabled]="!SanitairForm.valid"/>
+                    </div>
+                </fieldset>
+            </form>
+            <div *ngIf="SanitairID">
+                <form [formGroup]="SensorForm" (ngSubmit)="generateSensorPost(SensorForm.value)" >
+                    <fieldset>
+                        <legend>Sensor</legend>
+                        <div class="form-group">
+                            <label for="staticSensorID" class="col-form-label">SensorID</label>
+                            <input type="text" class="form-control" id="staticSensorID" formControlName="SensorID" />
+                        </div>
+
+                        <div class="form-group">
+                            <label for="staticSensorError" class="col-form-label">SensorError</label>
+                            <input type="text" class="form-control" id="staticSensorError" formControlName="SensorError"/>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="staticSensorPowerLevel" class="col-form-label">SensorPowerLevel</label>
+                            <input type="text" class="form-control" id="staticSensorPowerLevel" formControlName="SensorPowerLevel"/>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="staticSensorCount" class="col-form-label">SensorCount</label>
+                            <input type="text" class="form-control" id="staticSensorPowerLevel" formControlName="SensorCount"/>
+                        </div>
+
+                         <div class="form-group">
+                            <label for="staticSensorMode" class="col-form-label">SensorMode</label>
+                            <input type="text" class="form-control" id="staticSensorMode" formControlName="SensorMode"/>
+                        </div>
+                        <div class="form-group ">
+                            <input type="submit" class="btn btn-primary" value="Add Sensor" [disabled]="!SensorForm.valid"/>
+                        </div>
+                    </fieldset>
+                </form>
+            </div>
+        </div>
+        <div class="col-sm">
+            <legend>Generated JSON:</legend>
+            <textarea cols="80" rows="30">{{generatedJsonString}}</textarea>
+        </div>
+    </div>
+     <div class="row">
+        <div class="col-sm">
+            <button style="width: 100%" id="uploadButton" class="btn btn-primary" [disabled]="!SanitairID"  [disabled]="!selectCollection" (click)="upsertToDocument()"> Upsert Into Database</button> 
+        </div>
+    </div>
+</div>

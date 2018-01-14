@@ -1,0 +1,54 @@
+<div class="container">
+    <div class="row">        
+        <div class="col">
+            <button style="min-width: 100%;" class="btn btn-primary" (click)="setDayCount(1)"> 1 Day</button>
+        </div>
+         <div class="col">
+            <button style="min-width: 100%;" class="btn btn-primary" (click)="setDayCount(7)"> 7 Days </button>
+        </div>
+         <div class="col">
+            <button style="min-width: 100%;" class="btn btn-primary"  (click)="setDayCount(31)">31 Days </button>            
+        </div>
+         <div class="col">
+            <button style="min-width: 100%;" class="btn btn-primary" (click)="setDayCount(365)">365 Days </button>         
+        </div>
+         <div class="col">   
+            <button style="min-width: 100%;"  class="btn btn-primary" (click)="setDayCount(0)">All Days </button>             
+        </div>
+    </div>
+    <div class="row">
+        <hr />
+    </div>
+    <div class="row">
+        <div class="col">
+            <div *ngFor="let db of fulldb | keys | invert; let i = index">
+                <div *ngIf="db.key != '_id' && (i < daycount|| daycount == 0)" class="row"  >
+
+                    <table class="table  table-hover">
+                        <thead class="thead-dark">
+                            <tr > <th colspan="6" style="text-align: center;">{{db.key}}</th></tr>
+                            <tr>
+                                <th> Building</th>
+                                <th> Floor</th>
+                                <th> Sanitair </th>
+                                <th>Total Toilet Uses</th>
+                                <th>Total Sanitiar Uses</th>
+                                <th>Latest Update</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr  class="table-active" *ngFor="let sanitair of db.value | keys">
+                                <td> {{sanitair.value.BuildingID}} </td>
+                                <td> {{sanitair.value.FloorID}} </td>
+                                <td> {{sanitair.value.SanitairID}} </td>
+                                <td> {{sanitair.value.TotalToiletUses}} </td>                                    
+                                <td> {{sanitair.value.TotalSanitairUses}} </td>
+                                <td> {{sanitair.value.LatestUpdate}} </td>
+                            </tr>
+                        </tbody>
+                    </table>          
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
