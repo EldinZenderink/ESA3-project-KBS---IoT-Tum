@@ -162,6 +162,7 @@ static Devices* Ble_ScanSlaves(BleCon *con) {
 
 	while (1) {
 		char* rec = con->Ble_Receive(0, con);
+		delay_ms(100);
 		char *cMac;
 		con->passthrough->USART_putstr("\n", con->passthrough);
 		con->passthrough->USART_putstr(rec, con->passthrough);

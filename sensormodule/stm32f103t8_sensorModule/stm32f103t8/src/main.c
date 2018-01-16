@@ -99,7 +99,7 @@ int main(void)
 					pcserial->USART_putstr("\n DEVICE MAC: \n", pcserial);
 					pcserial->USART_putstr(dev.mac, pcserial);
 					
-					if(strstr(dev.deviceid, "MASTER") != NULL){
+					if(strstr(dev.deviceid, "TEST") != NULL){
 						iDeviceFound = 1;
 						ble->Ble_ConnectSlave(dev.mac, ble);
 						pcserial->USART_putstr("\n  FOUND MASTER AND CONNECT TO IT! \n", pcserial);
