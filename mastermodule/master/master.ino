@@ -293,14 +293,8 @@ void loop() {
         SimpleJson *ReceivedSensorJson = parse_SimpleJson(100, cReceived);
         GetHeapMain("4");
 
-        //4. Check for new day
-        if(strstr(cTimeStamp1, cCurrentDateTime) != NULL){
-          FreeSimpleJson(SensorsJsonGlobal); 
-          SensorsJsonGlobal = new_SimpleJson(800);
-          JsonGlobal->ReplaceFieldWithObject("Sensors", SensorsJsonGlobal, JsonGlobal);
-          FreeChar(cCurrentDateTime);
-          cCurrentDateTime = cTimeStamp1;
-        }
+        
+     
         
         if(ReceivedSensorJson != NULL){
           
@@ -351,7 +345,17 @@ void loop() {
             GetHeapMain("free 6-1");
             
           }
-          
+
+             char* cDate1 = strtok(cTimeStamp1, " ");  
+          //4. Check for new day
+          if(strstr(cDate1, cCurrentDateTime) == NULL){
+            FreeSimpleJson(SensorsJsonGlobal); 
+            SensorsJsonGlobal = new_SimpleJson(800);
+            JsonGlobal->ReplaceFieldWithObject("Sensors", SensorsJsonGlobal, JsonGlobal);
+            FreeChar(cCurrentDateTime);
+            cCurrentDateTime = cDate1;
+          }
+            
           if(SensorsJsonGlobal != NULL){ 
               //7. Replace current sensor json in base json with new sensor json                       
               GetHeapMain("7");
@@ -363,7 +367,6 @@ void loop() {
           SimpleJson *withDate = new_SimpleJson(600);          
           GetHeapMain("9");
           
-          char* cDate1 = strtok(cTimeStamp1, " ");  
           GetHeapMain("10");  
                
           char*  cPart1 = CombineString(cDate1, ".");  
@@ -402,8 +405,6 @@ void loop() {
           FreeChar(cJsonToSend); 
           GetHeapMain("free 14"); 
           
-          FreeChar(cReceived);  
-          GetHeapMain("free 2");
           
           FreeSimpleJson(ReceivedSensorJson);
           GetHeapMain("free 4");
@@ -421,8 +422,6 @@ void loop() {
           GetHeapMain("free 2");
         }
         
-    }else{
-        FreeChar(cReceived);
     }
 }
 

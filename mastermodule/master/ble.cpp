@@ -29,9 +29,9 @@ static uint8_t Ble_SetName(char* cName, BleCon *con){
   while (1) {
      char* cReceive = con->Ble_Receive(0, con);
      if(cReceive != NULL){
-        if (strstr(con->Ble_Receive(0, con), "OK") != NULL) {
+        if (strstr(cReceive, "OK") != NULL) {
           return 1;
-        } else if(strstr(con->Ble_Receive(0, con), "RR") != NULL){
+        } else if(strstr(cReceive, "RR") != NULL){
           return 0;
         } else {
           return 0;
@@ -295,31 +295,24 @@ static uint8_t Ble_Send(char *str,  uint8_t needAck, BleCon *con){
  */ 
 static char* Ble_Receive(uint8_t needAck, BleCon *con){
 	con->iAckReceiveSwitch = 0;
-  char* cToReturn;
   while (1) {
     switch (con->iAckReceiveSwitch) {
     case 0:
-     
-      con->cReceiveBuffer = (char*)realloc(con->cReceiveBuffer, sizeof(char) * 100); //current buffer size = 100 hardcoded
       con->com->USART_getstr(con->cReceiveBuffer, 1000, con->com); 
-      if(strlen(con->cReceiveBuffer) > 0 && strlen(con->cReceiveBuffer )< 101){        
-        cToReturn = (char*)malloc(sizeof(char) * strlen(con->cReceiveBuffer) + sizeof(char));      
-        strcpy(cToReturn, con->cReceiveBuffer);
-        cToReturn[strlen(con->cReceiveBuffer) + 1] = '\0'; 
-      } else {
-        cToReturn = NULL;
-      }
-      if (strlen(con->cReceiveBuffer) != 0 && needAck) {
-        con->iAckReceiveSwitch = 1;
-      }
-      else {       
-        return cToReturn;
-      }
+    
+      
+        if (strlen(con->cReceiveBuffer) != 0 && needAck) {
+          con->iAckReceiveSwitch = 1;
+        }
+        else {       
+          return con->cReceiveBuffer;
+        }
+     
       break;
 
     case 1:
       con->com->USART_putstr("  ACK", con->com);
-      return cToReturn;
+      return con->cReceiveBuffer;
     default:
       con->iAckReceiveSwitch = 0;
       break;

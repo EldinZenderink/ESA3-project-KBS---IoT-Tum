@@ -117,11 +117,14 @@ int main(void)
 				}
 		}
 	}
+	int	ret = snprintf(cString1, sizeof cString1, "{ coreclock :%i }\n",SystemCoreClock);
+	ret = snprintf(cString1, sizeof cString1, "{\"id\":\"S2\",\"er\":\"1\",\"md\":\"%i\",\"pw\":\"%i\",\"us\":%i}",iMode,iBatteryUsage,iUses);
+	ble->Ble_Send(cString1,1,ble);             // transmit char array string1 via ble to masterd
 	//disables ble (will be activated when needed)
 	ble->Ble_OFF(ble);
 	
 	// prints current core clock of the device
-	int	ret = snprintf(cString1, sizeof cString1, "{ coreclock :%i }\n",SystemCoreClock);
+	
 	pcserial->USART_putstr(cString1,pcserial);
 	delay_ms(1000);
 	
@@ -130,7 +133,7 @@ int main(void)
 // ----------------------------------------------------------------------------											
   while(1)
   {
-	
+		
    //checks if there is something in the range of the sensor
 		if( sens->SR04_reg(iDistance ,iMode) ){
 			// waits till it dissapears before you add an use
@@ -154,16 +157,22 @@ int main(void)
 		// when 10 minutes passed and there is at least one use, send the data to the master
 		if(iSendBLE && (iUses>0 || iBatteryUsage < 10)){
 				if(iBatteryUsage < 10){					
-					ret = snprintf(cString1, sizeof cString1, "{\"id\":\"XY\",\"er\":\"1\",\"md\":\"%i\",\"pw\":\"%i\",\"us\":\"%i\"}",iMode,iBatteryUsage,iUses);
+					ret = snprintf(cString1, sizeof cString1, "{\"id\":\"S2\",\"er\":\"1\",\"md\":\"%i\",\"pw\":\"%i\",\"us\":%i}",iMode,iBatteryUsage,iUses);
 				} else {					
-					ret = snprintf(cString1, sizeof cString1, "{\"id\":\"XY\",\"er\":\"0\",\"md\":\"%i\",\"pw\":\"%i\",\"us\":\"%i\"}",iMode,iBatteryUsage,iUses);
+					ret = snprintf(cString1, sizeof cString1, "{\"id\":\"S2`	1\",\"er\":\"0\",\"md\":\"%i\",\"pw\":\"%i\",\"us\":%i}",iMode,iBatteryUsage,iUses);
 				}
 				ble->Ble_ON(ble);
-			  delay_ms(500);
+			  delay_ms(1000);
 				pcserial->USART_putstr("\n", pcserial);
+				
+				
+				
+				
+				
+				
 				pcserial->USART_putstr(cString1,pcserial); // debug to check what the sensor sends
 			  ble->Ble_Send(cString1,1,ble);             // transmit char array string1 via ble to master
-				delay_ms(250);
+				delay_ms(1000);
 				ble->Ble_OFF(ble);
 				iUses = 0;
 				iTimCount=0;
@@ -175,7 +184,7 @@ int main(void)
 		
 		pcserial->USART_putstr("Entering sleep mode :X", pcserial);
 		//sleep mode untill interupt
-		__WFI(); 
+		__WFI();  
   }
 }
 

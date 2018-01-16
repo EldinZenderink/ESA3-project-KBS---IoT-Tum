@@ -74,6 +74,7 @@ static char* USARTgetstr(char * cBuffer, uint32_t iTimeOut, SimpleUSART *susart)
     if (Serial.available()) {
       String sReceived = Serial.readString();
       sReceived.toCharArray(cBuffer, sReceived.length() + 1);
+      cBuffer[sReceived.length() + 1] = '\0';
       return cBuffer;
     } else {
       cBuffer[0] = '\0';
